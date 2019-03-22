@@ -2,6 +2,7 @@ import os
 import sys
 import itertools
 from pathlib import Path
+from logic.logger.logger import Logger
 from utils.images.tiff import *
 from utils.lang import byte_util as butil
 
@@ -22,18 +23,20 @@ class BigRegion:
     __IMG_WIDTH  = 10
     __IMG_HEIGHT = 10
     __total_size = 0
+    __logger = None
     
-    def __init__(self, __patch_img_width, __patch_img_height):
+    def __init__(self, __patch_img_width, __patch_img_height, __logger=None):
         self.__IMG_WIDTH  = __patch_img_width
         self.__IMG_HEIGHT = __patch_img_height
+        self.__logger = __logger
 
 
     '''
     Attach Occurrence Flag
     '''
     def attachOccurrenceFlag(self, _mode, _input_path, _output_path, _ans_filename = ''):
-        print('[1/3] Attach Occurrence Flag.')
-        print(_input_path + '/*.tif')
+        self.__printMsg('[1/3] Attach Occurrence Flag.')
+        self.__printMsg(_input_path + '/*.tif')
         self.__total_size = len(list(Path().glob(_input_path + '/*.tif')))
         if self.__total_size == 0:
             raise FileNotFoundError('Tiff file not found. [' + _input_path + '/*.tif]')
@@ -73,8 +76,11 @@ class BigRegion:
 
             with open(Path(_output_path + '/' + _img_path.name), 'wb') as _wfp:
                 _wfp.write(_img.bytedata)
-
-            self.__printBar(self.__total_size, _pi-1, _landslides_flag + ':' + str(_img_path))
+                
+            if self.__logger == None:
+                self.__printBar(self.__total_size, _pi-1, _landslides_flag + ':' + str(_img_path))
+            else:
+                self.__printProgress(self.__total_size, _pi-1, str(_img_path))
             _pi = _pi + 1
 
 
@@ -117,7 +123,10 @@ class BigRegion:
             with open(Path(_output_path + '/' + img_path.name), 'wb') as wfp:
                 wfp.write(img.bytedata)
 
-            self.__printBar(self.__total_size, pi-1)
+            if self.__logger == None:
+                self.__printBar(self.__total_size, pi-1)
+            else:
+                self.__printProgress(self.__total_size, pi-1, str(img_path))
             pi = pi + 1
 
 
@@ -125,13 +134,13 @@ class BigRegion:
      Collect big region
     '''
     def collect(self, _path, _debug=False):
-        print('[2/3] Collect group bit region.')
+        self.__printMsg('[2/3] Collect group bit region.')
         _gen_file = Path(_path).glob('*.tif')
         _i = 0
         for _img_path in _gen_file:
             _split = _img_path.stem.split('_')
             if len(_split) != 4:
-                print('[ERROR] file name "' + _img_path.name + '" format "{(train/test)}_{big_region_id}_{x}_{y}.tif"')
+                self.__printMsg('file name "' + _img_path.name + '" format "{(train/test)}_{big_region_id}_{x}_{y}.tif"', 'error')
                 break
             _groupnum = int(_split[1])
             _colnum = int(_split[2])
@@ -147,7 +156,11 @@ class BigRegion:
             self.__map_group[_groupkey][_rownum][_colnum] = {}
             self.__map_group[_groupkey][_rownum][_colnum] = TiffInfo(_img_path)
 
-            self.__printBar(self.__total_size, _i)
+            if self.__logger == None:
+                self.__printBar(self.__total_size, _i)
+            else:
+                self.__printProgress(self.__total_size, _i, str(_img_path))
+
             _i = _i + 1
 
         if _debug:
@@ -158,7 +171,7 @@ class BigRegion:
     Create big region group Tiff file
     '''
     def create(self, _output_path, src_delete=False):
-        print('[3/3] Create big region group Tiff file.')
+        self.__printMsg('[3/3] Create big region group Tiff file.')
         _total_count = len(self.__map_group)
         _header = header()
         _header.create('little', 8)     # IFD is next header
@@ -183,7 +196,10 @@ class BigRegion:
             _ifd_supplement = str(_img_list).encode()
 
             _output_file = self.__outputTiff(_output_path, _groupkey, _header, _ifd, _ifd_supplement, _bdata)
-            self.__printBar(self.__total_size, _gi, _output_file)
+            if self.__logger == None:
+                self.__printBar(self.__total_size, _gi, _output_file)
+            else:
+                self.__printProgress(self.__total_size, _gi, str(_output_file))
             _gi = _gi + 1
 
 
@@ -299,6 +315,19 @@ class BigRegion:
         else:
             print('\u001B[3B', end="")
 
+
+    def __printProgress(self, total, now, filename):
+        msg = '[' + str(int((now/total) * 100)) + '%]:' + str(now) + '/' + str(total) + ': ' + filename
+        if self.__logger == None:
+            print(msg)
+        else:
+            self.__logger.info(msg)
+
+    def __printMsg(self, msg):
+        if self.__logger == None:
+            print(msg)
+        else:
+            self.__logger.info(msg)
 
 if __name__ == '__main__':
     _bigregion = BigRegion(40, 40)

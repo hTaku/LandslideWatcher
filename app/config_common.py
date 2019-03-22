@@ -30,6 +30,21 @@ class config_common(object):
     # Image height
     IMG_HEIGHT = 10
 
+    # log directory
+    LOG_DIR = '../log'
+
+    # log output(stream/file/both)
+    LOG_OUTPUT = 'both'
+
+    # log filename
+    LOG_FILENAME = 'app.log'
+
+    # log level
+    LOG_LEVEL = 'debug'
+
+    # log format
+    LOG_FORMAT = '[%(asctime)s][%(name)s][%(levelname)s]: %(message)s'
+
     def __init__(self, __proc_type, __occurrence, __satname):
         _subdir = '/' + __proc_type + '/' + __satname + '/' + __occurrence
 
