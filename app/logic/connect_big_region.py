@@ -58,6 +58,11 @@ class BigRegion:
             # get directory level for upper one
             _landslides_flag = os.path.basename(os.path.dirname(_img_path))
 
+            if self.__logger == None:
+                self.__printBar(self.__total_size, _pi-1, _landslides_flag + ':' + str(_img_path))
+            else:
+                self.__printProgress(self.__total_size, _pi-1, str(_img_path), self.__progress_prefix)
+
             _img = tiff()
             with open(_img_path, 'rb') as _rfp:
                 _imgdata = _rfp.read()
@@ -78,11 +83,7 @@ class BigRegion:
 
             with open(Path(_output_path + '/' + _img_path.name), 'wb') as _wfp:
                 _wfp.write(_img.bytedata)
-                
-            if self.__logger == None:
-                self.__printBar(self.__total_size, _pi-1, _landslides_flag + ':' + str(_img_path))
-            else:
-                self.__printProgress(self.__total_size, _pi-1, str(_img_path), self.__progress_prefix)
+
             _pi = _pi + 1
 
 
@@ -101,6 +102,12 @@ class BigRegion:
 
         pi = 1
         for img_path in _gen_input_path:
+            if self.__logger == None:
+                self.__printBar(self.__total_size, pi-1)
+            else:
+                self.__printProgress(self.__total_size, pi-1, str(img_path), self.__progress_prefix)
+
+            
             img = tiff()
             with open(img_path, 'rb') as rfp:
                 imgdata = rfp.read()
@@ -125,10 +132,6 @@ class BigRegion:
             with open(Path(_output_path + '/' + img_path.name), 'wb') as wfp:
                 wfp.write(img.bytedata)
 
-            if self.__logger == None:
-                self.__printBar(self.__total_size, pi-1)
-            else:
-                self.__printProgress(self.__total_size, pi-1, str(img_path), self.__progress_prefix)
             pi = pi + 1
 
 
@@ -141,6 +144,11 @@ class BigRegion:
         _gen_file = Path(_path).glob('*.tif')
         _i = 0
         for _img_path in _gen_file:
+            if self.__logger == None:
+                self.__printBar(self.__total_size, _i)
+            else:
+                self.__printProgress(self.__total_size, _i, str(_img_path),  self.__progress_prefix)
+
             _split = _img_path.stem.split('_')
             if len(_split) != 4:
                 self.__printMsg('file name "' + _img_path.name + '" format "{(train/test)}_{big_region_id}_{x}_{y}.tif"', 'error')
@@ -158,11 +166,6 @@ class BigRegion:
                 self.__map_group[_groupkey][_rownum] = {}
             self.__map_group[_groupkey][_rownum][_colnum] = {}
             self.__map_group[_groupkey][_rownum][_colnum] = TiffInfo(_img_path)
-
-            if self.__logger == None:
-                self.__printBar(self.__total_size, _i)
-            else:
-                self.__printProgress(self.__total_size, _i, str(_img_path),  self.__progress_prefix)
 
             _i = _i + 1
 
@@ -182,6 +185,12 @@ class BigRegion:
 
         _gi = 1
         for _groupkey in sorted(self.__map_group.keys()):
+            if self.__logger == None:
+                self.__printBar(self.__total_size, _gi, _output_file)
+            else:
+                self.__printProgress(self.__total_size, _gi, str(_output_file), self.__progress_prefix)
+
+
             _groupval = self.__map_group[_groupkey]
             _defaultifd = None
             _img_width = _img_height = 0
@@ -200,10 +209,6 @@ class BigRegion:
             _ifd_supplement = str(_img_list).encode()
 
             _output_file = self.__outputTiff(_output_path, _groupkey, _header, _ifd, _ifd_supplement, _bdata)
-            if self.__logger == None:
-                self.__printBar(self.__total_size, _gi, _output_file)
-            else:
-                self.__printProgress(self.__total_size, _gi, str(_output_file), self.__progress_prefix)
             _gi = _gi + 1
 
 
