@@ -13,7 +13,9 @@ class TiffInfo:
     def __init__(self, _path):
         self.path = _path
         self.tif = tiff()
-        with open(_path, 'rb') as rfp:
+
+    def load(self):
+        with open(self.path, 'rb') as rfp:
             self.tif.parse(rfp.read())
 
     
@@ -185,12 +187,6 @@ class BigRegion:
 
         _gi = 1
         for _groupkey in sorted(self.__map_group.keys()):
-            if self.__logger == None:
-                self.__printBar(self.__total_size, _gi, _output_file)
-            else:
-                self.__printProgress(self.__total_size, _gi, str(_output_file), self.__progress_prefix)
-
-
             _groupval = self.__map_group[_groupkey]
             _defaultifd = None
             _img_width = _img_height = 0
@@ -199,17 +195,23 @@ class BigRegion:
                 _img_height = _img_height + self.__IMG_HEIGHT
                 _img_width = 0
                 for _colkey in sorted(_groupval[_rowkey].keys()):
+                    _tiffinfo = _groupval[_rowkey][_colkey]
+                    _tiffinfo.load()
                     _img_width = _img_width + self.__IMG_WIDTH
-                    _defaultifd = _groupval[_rowkey][_colkey].tif.ifd_list
-                    _imginfo = _groupval[_rowkey][_colkey]
-                    _img_list.append(os.path.basename(_imginfo.path))
+                    _defaultifd = _tiffinfo.tif.ifd_list
+                    _img_list.append(os.path.basename(_tiffinfo.path))
+                    # Debug print
+                    if self.__logger == None:
+                        self.__printBar(self.__total_size, _gi, _tiffinfo.path)
+                    else:
+                        self.__printProgress(self.__total_size, _gi, str(_tiffinfo.path), self.__progress_prefix)
+                    _gi = _gi + 1
             _bdata = self.__connectData(_groupval)
             _ifd = ifd(_header)
             _ifd.add(self.__createIFDinfo(_header, _defaultifd, _img_width, _img_height, _img_list, _bdata))
             _ifd_supplement = str(_img_list).encode()
 
             _output_file = self.__outputTiff(_output_path, _groupkey, _header, _ifd, _ifd_supplement, _bdata)
-            _gi = _gi + 1
 
 
     def __createIFDinfo(self, _header, _default_ifd, _img_width, _img_height, _img_list, _data):
